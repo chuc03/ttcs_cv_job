@@ -30,6 +30,8 @@ export const login = async (req, res) => {
       });
     }
 
+    console.log("✅ Đăng nhập thành công:", user);
+
     user.timeLogin = new Date();
     await user.save();
 

@@ -16,7 +16,7 @@ import {
   LuUser,
 } from "react-icons/lu";
 import { useDispatch, useSelector } from "react-redux";
-import { setUser } from "@store/UserReducer";
+import { setUser, logout as userLogout } from "@store/UserReducer";
 
 const LayoutDefault = () => {
   const user = useSelector((state) => state.user.user);
@@ -26,14 +26,19 @@ const LayoutDefault = () => {
   const handleLogout = async () => {
     const response = await logout();
     if (response.success) {
-      localStorage.removeItem("user");
-      dispatch(setUser(null));
+      dispatch(userLogout());
       message.success("Đăng xuất thành công");
-
       setTimeout(() => navigate("/login"), 800);
     } else {
       message.error("Đăng xuất thất bại");
     }
+  };
+
+  const getInitial = (fullName) => {
+    if (!fullName) return "?";
+    const parts = fullName.trim().split(/\s+/);
+    const last = parts[parts.length - 1] || parts[0];
+    return last.charAt(0).toUpperCase();
   };
 
   const profieMenuItems = [
@@ -86,11 +91,17 @@ const LayoutDefault = () => {
         key: "user-info",
         label: (
           <div className="flex items-center gap-2">
-            <img
-              src={user?.avatar || "https://via.placeholder.com/150"}
-              alt="avatar"
-              className="w-10 h-10 rounded-full border object-cover"
-            />
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt="avatar"
+                className="w-10 h-10 rounded-full border object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full border bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
+                {getInitial(user?.fullName)}
+              </div>
+            )}
             <div>
               <h4 className="font-semibold text-[16px] text-gray-900">
                 {user?.fullName}
@@ -152,12 +163,18 @@ const LayoutDefault = () => {
                 }}
                 overlayClassName="custom-dropdown"
               >
-                <div className="relative cursor-pointer">
-                  <img
-                    src={user.avatar}
-                    alt="avatar"
-                    className="w-9 h-9 rounded-full border object-cover"
-                  />
+                <div className="relative cursor-pointer flex items-center gap-2">
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="avatar"
+                      className="w-9 h-9 rounded-full border object-cover"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full border bg-gray-200 flex items-center justify-center text-gray-700 font-semibold">
+                      {getInitial(user?.fullName)}
+                    </div>
+                  )}
                   <span className="absolute right-0 bottom-[-1px] w-4 h-4 rounded-full flex items-center justify-center bg-white">
                     <RiArrowDropDownLine />
                   </span>

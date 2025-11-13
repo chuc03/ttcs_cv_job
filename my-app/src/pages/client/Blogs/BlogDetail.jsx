@@ -67,8 +67,7 @@ const BlogDetail = () => {
           likedBlogs[id] = isLiked;
           localStorage.setItem("likedBlogs", JSON.stringify(likedBlogs));
         } catch (e) {
-          console.error("Failed to update likedBlogs in localStorage", e);
-          localStorage.removeItem("likedBlogs"); // Clear corrupted data
+          localStorage.removeItem("likedBlogs");
         }
 
         if (currentBlog.category) {
@@ -84,8 +83,9 @@ const BlogDetail = () => {
                 .slice(0, 3)
             );
           } catch (simErr) {
-            if (simErr.name !== "AbortError")
-              console.error("Error fetching similar blogs:", simErr);
+            if (simErr.name !== "AbortError") {
+              setSimilarBlogs([]);
+            }
           } finally {
             setLoadingSimilar(false);
           }
@@ -121,6 +121,7 @@ const BlogDetail = () => {
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (!comment.trim() || !token) return;
+
     setLoadingComment(true);
     try {
       const res = await addComment(id, comment, token);
@@ -131,7 +132,6 @@ const BlogDetail = () => {
       setComment("");
       setTimeout(scrollToBottom, 100);
     } catch (err) {
-      console.error("Error adding comment:", err);
       alert("Không thể gửi bình luận. Vui lòng thử lại.");
     } finally {
       setLoadingComment(false);
@@ -140,6 +140,7 @@ const BlogDetail = () => {
   const handleDeleteComment = async (commentId) => {
     if (!token || !window.confirm("Bạn có chắc muốn xóa bình luận này?"))
       return;
+
     try {
       await deleteComment(id, commentId, token);
       setBlog((prevBlog) => ({
@@ -147,7 +148,6 @@ const BlogDetail = () => {
         comments: prevBlog.comments.filter((c) => c._id !== commentId),
       }));
     } catch (err) {
-      console.error("Error deleting comment:", err);
       alert("Xóa bình luận thất bại.");
     }
   };
@@ -157,21 +157,25 @@ const BlogDetail = () => {
       alert("Bạn cần đăng nhập để thích bài viết");
       return;
     }
+
     const originalLiked = liked;
     const originalLikesCount = blog?.likesCount ?? blog?.likes?.length ?? 0;
     const newLikedState = !liked;
     const newLikesCount = newLikedState
       ? originalLikesCount + 1
       : Math.max(0, originalLikesCount - 1);
+
     setLiked(newLikedState);
     setBlog((prev) => ({ ...prev, likesCount: newLikesCount }));
+
     try {
       const likedBlogs = JSON.parse(localStorage.getItem("likedBlogs") || "{}");
       likedBlogs[id] = newLikedState;
       localStorage.setItem("likedBlogs", JSON.stringify(likedBlogs));
     } catch (e) {
-      console.error("Failed to update likedBlogs in localStorage", e);
+      // Silent fail for localStorage
     }
+
     try {
       const res = await toggleLike(id, token);
       if (res.data?.data) {
@@ -184,11 +188,10 @@ const BlogDetail = () => {
           likedBlogs[id] = res.data.data.liked;
           localStorage.setItem("likedBlogs", JSON.stringify(likedBlogs));
         } catch (e) {
-          console.error("Failed to sync likedBlogs after API success", e);
+          // Silent fail for localStorage
         }
       }
     } catch (err) {
-      console.error("Error toggling like:", err);
       setLiked(originalLiked);
       setBlog((prev) => ({ ...prev, likesCount: originalLikesCount }));
       try {
@@ -198,18 +201,17 @@ const BlogDetail = () => {
         likedBlogs[id] = originalLiked;
         localStorage.setItem("likedBlogs", JSON.stringify(likedBlogs));
       } catch (e) {
-        console.error("Failed to rollback likedBlogs after API failure", e);
+        // Silent fail for localStorage
       }
       alert("Có lỗi xảy ra, không thể thay đổi trạng thái thích.");
     }
   };
 
-  // --- Loading và Error UI ---
+  
   if (loading && !blog) {
     return (
       <div className="flex justify-center items-center min-h-[70vh]">
-        {" "}
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-500"></div>{" "}
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
@@ -381,12 +383,10 @@ const BlogDetail = () => {
                       <div className="flex-1">
                         <div className="flex justify-between items-center mb-1">
                           <p className="text-sm font-semibold text-gray-900">
-                            {" "}
-                            {c.user?.name || "Người dùng ẩn"}{" "}
+                            {c.user?.name || "Người dùng ẩn"}
                           </p>
                           <span className="text-xs text-gray-500">
-                            {" "}
-                            {formatDateTime(c.createdAt)}{" "}
+                            {formatDateTime(c.createdAt)}
                           </span>
                         </div>
                         <p className="text-gray-800 text-sm leading-relaxed">

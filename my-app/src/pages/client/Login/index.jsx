@@ -25,11 +25,11 @@ export default function Login() {
     if (isSubmitting) return;
 
     setIsSubmitting(true);
-    setError(""); // Clear previous errors
+    setError(""); 
 
     try {
       const response = await login({ username, password });
-      
+
       if (!response.success) {
         setError(
           response.errors?.[0] || "Tài khoản hoặc mật khẩu không chính xác."
@@ -46,9 +46,7 @@ export default function Login() {
         return;
       }
 
-      
       dispatch(setUser(response.data));
-      localStorage.setItem("user", JSON.stringify(response.data));
       message.success("🎉 Đăng nhập thành công!");
 
       const redirectPath = getRedirectPath(response.data.role);

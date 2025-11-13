@@ -14,8 +14,12 @@ import {
 } from "react-icons/lu";
 import { parseHTMLList } from "@helpers/parseHTMLList";
 import { getRelativeTime } from "@helpers/getRelavtiveTime";
-import { useSelector } from "react-redux";
-import { applyJob } from "@services/client/ApplicationService";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  applyJob,
+  getApplicationsByUser,
+} from "@services/client/ApplicationService";
+import { addAppliedJob, setAppliedJobs } from "@store/AppliedReducer";
 
 const optionCity = [
   {
@@ -36,6 +40,7 @@ export default function JobList() {
   const navigate = useNavigate();
 
   const user = useSelector((state) => state.user.user);
+  const appliedJobIds = useSelector((state) => state.appliedJobs.appliedJobs);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [jobs, setJobs] = useState([]);
@@ -55,6 +60,8 @@ export default function JobList() {
   const [totalJobs, setTotalJobs] = useState(0);
 
   const [notificationApi, contextHolder] = notification.useNotification();
+  const dispatch = useDispatch();
+
   const openNotification = () => {
     const btn = (
       <Space>
@@ -139,6 +146,22 @@ export default function JobList() {
     fetchJobs(currentPage);
   }, [currentPage]);
 
+  const fetchAppliedJobs = async () => {
+    if (!user) return;
+    try {
+      const response = await getApplicationsByUser();
+      if (response.success && response.data) {
+        const jobIds = response.data.map((app) => app.job?._id || app.job);
+        dispatch(setAppliedJobs(jobIds));
+      }
+    } catch (error) {
+      console.error("Error fetching applied jobs:", error);
+    }
+  };
+  useEffect(() => {
+    fetchAppliedJobs();
+  }, [user]);
+
   const handleSearch = () => {
     setCurrentPage(1);
     fetchJobs(1);
@@ -150,14 +173,26 @@ export default function JobList() {
   };
 
   const handleApplication = async (jobId) => {
-    console.log("Apply for job ID:", jobId);
     if (!user) {
       openNotification();
+      return;
     }
 
     try {
       const response = await applyJob({ jobId });
-      console.log("Application response:", response);
+      if (!response.success || !response.data) {
+        notificationApi.error({
+          message: "Ứng tuyển thất bại",
+          description: "Đã có lỗi xảy ra khi ứng tuyển.",
+        });
+        return;
+      }
+
+      dispatch(addAppliedJob(jobId));
+      notificationApi.success({
+        message: "Ứng tuyển thành công",
+        description: "Bạn đã ứng tuyển vào công việc thành công.",
+      });
     } catch (error) {
       console.error("Error applying for job:", error);
     }
@@ -230,7 +265,7 @@ export default function JobList() {
           <>
             <div className="mb-4 flex justify-between items-center">
               <p className="text-gray-600">
-                Tìm thấy{" "}
+                Tìm thấy
                 <span className="font-semibold text-gray-800">{totalJobs}</span>{" "}
                 việc làm
               </p>
@@ -386,18 +421,33 @@ export default function JobList() {
                       </button>
                     </div>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      className="w-full my-4"
-                      style={{
-                        background: "#d43f3f",
-                        height: 48,
-                      }}
-                      onClick={() => handleApplication(selectedJob._id)}
-                    >
-                      Ứng tuyển
-                    </Button>
+                    {appliedJobIds.includes(selectedJob._id) ? (
+                      <Button
+                        type="primary"
+                        size="large"
+                        disabled
+                        className="w-full my-4"
+                        style={{
+                          background: "#ffffff",
+                          height: 48,
+                        }}
+                      >
+                        Đã ứng tuyển
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        size="large"
+                        className="w-full my-4"
+                        style={{
+                          background: "#d43f3f",
+                          height: 48,
+                        }}
+                        onClick={() => handleApplication(selectedJob._id)}
+                      >
+                        Ứng tuyển
+                      </Button>
+                    )}
                   </div>
 
                   <hr className="border-b border-[#dedede] mx-6" />

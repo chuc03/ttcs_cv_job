@@ -38,13 +38,12 @@ const LoginAdmin = () => {
       }
 
       dispatch(setUser(response.data));
-      localStorage.setItem("user", JSON.stringify(response.data));
       messageApi.success("Đăng nhập thành công");
 
       const redirectPath = getRedirectPath(response.data.role);
       setTimeout(() => {
         navigate(redirectPath);
-      }, 1500);
+      }, 800);
     } catch (error) {
       console.error("Login failed:", error);
       messageApi.error(

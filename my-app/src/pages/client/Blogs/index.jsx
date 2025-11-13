@@ -33,7 +33,6 @@ const BlogPage = () => {
     const fetchBlogs = async () => {
       try {
         const response = await getBlogs();
-        console.log("Blogs fetched:", response);
         setBlogs(response.data.data || []);
       } catch (error) {
         console.error("Error loading blogs:", error);
@@ -58,7 +57,11 @@ const BlogPage = () => {
 
   const featured = currentBlogs[0] || null;
   const otherBlogs = currentBlogs.slice(1);
-  const handleBlogClick = (id) => id && navigate(`/blog/${id}`);
+
+  const handleBlogClick = (id) => {
+    if (!id) return;
+    navigate(`/blog/${id}`);
+  };
 
   if (loading) {
     return (
@@ -90,10 +93,7 @@ const BlogPage = () => {
           </p>
         </div>
 
-        <div
-          className="flex flex-wrap justify-center gap-2
-         mb-10"
-        >
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
           {categories.map((cat) => (
             <motion.button
               key={cat}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { NavLink, useNavigate, useParams } from "react-router-dom";
 import { getJobById } from "@services/client/JobsService";
 import { motion } from "framer-motion";
 import {
@@ -9,15 +9,49 @@ import {
   LuMapPin,
   LuSquareTerminal,
 } from "react-icons/lu";
-import { Button } from "antd";
+import { Button, notification, Space } from "antd";
 import { getRelativeTime } from "@helpers/getRelavtiveTime";
 import { parseHTMLList } from "@helpers/parseHTMLList";
+
+import { applyJob } from "@services/client/ApplicationService";
+import { addAppliedJob } from "@store/AppliedReducer";
+import { useDispatch, useSelector } from "react-redux";
 
 const DetailJob = () => {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [company, setCompany] = useState(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.user.user);
+
+  const appliedJobIds = useSelector((state) => state.appliedJobs?.appliedJobs);
+  const [notificationApi, contextHolder] = notification.useNotification();
+
+  const openNotification = () => {
+    const btn = (
+      <Space>
+        <NavLink
+          to={"/login"}
+          className="!px-4 !py-1.5 !text-white rounded-full !bg-teal-500 hover:bg-white/20 hover:text-amber-50 transition-colors"
+        >
+          Đăng nhập
+        </NavLink>
+        <NavLink
+          to={"/register"}
+          className="!bg-white !text-green-700 px-4 py-1.5 rounded-full shadow-sm hover:bg-blue-100 transition-colors"
+        >
+          Đăng kí
+        </NavLink>
+      </Space>
+    );
+    notificationApi.warning({
+      message: "Vui lòng đăng nhập để ứng tuyển",
+      description: "Bạn cần đăng nhập để có thể ứng tuyển vào công việc này.",
+      btn,
+    });
+  };
+
   useEffect(() => {
     if (!id) return;
     const fetchJobDetail = async () => {
@@ -33,6 +67,32 @@ const DetailJob = () => {
     };
     fetchJobDetail();
   }, [id]);
+
+  const handleApplication = async (jobId) => {
+    if (!user) {
+      openNotification();
+      return;
+    }
+
+    try {
+      const response = await applyJob({ jobId });
+      if (!response.success || !response.data) {
+        notificationApi.error({
+          message: "Ứng tuyển thất bại",
+          description: "Đã có lỗi xảy ra khi ứng tuyển.",
+        });
+        return;
+      }
+
+      dispatch(addAppliedJob(jobId));
+      notificationApi.success({
+        message: "Ứng tuyển thành công",
+        description: "Bạn đã ứng tuyển vào công việc thành công.",
+      });
+    } catch (error) {
+      console.error("Error applying for job:", error);
+    }
+  };
 
   return (
     <>
@@ -86,17 +146,33 @@ const DetailJob = () => {
                       </button>
                     </div>
 
-                    <Button
-                      type="primary"
-                      size="large"
-                      className="w-full my-4"
-                      style={{
-                        background: "#d43f3f",
-                        height: 48,
-                      }}
-                    >
-                      Ứng tuyển
-                    </Button>
+                    {appliedJobIds?.includes(job._id) ? (
+                      <Button
+                        type="primary"
+                        size="large"
+                        disabled
+                        className="w-full my-4"
+                        style={{
+                          background: "#ffffff",
+                          height: 48,
+                        }}
+                      >
+                        Đã ứng tuyển
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        size="large"
+                        className="w-full my-4"
+                        style={{
+                          background: "#d43f3f",
+                          height: 48,
+                        }}
+                        onClick={() => handleApplication(job._id)}
+                      >
+                        Ứng tuyển
+                      </Button>
+                    )}
                   </div>
                   <div className="flex flex-col gap-4">
                     <div className="bg-white p-6 pt-0 rounded-b-lg shadow-md flex flex-col gap-2">

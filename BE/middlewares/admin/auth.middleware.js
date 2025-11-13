@@ -16,7 +16,7 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Forbidden" });
 
     res.locals.user = {
-      id: user._id,
+      id: user._id.toString(),
       fullName: user.fullName,
       username: user.username,
       role: decoded.role,
